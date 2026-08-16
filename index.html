@@ -1,67 +1,199 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <title>PyWith - 在线 Python 交互沙盒</title>
-    <!-- 引入 PyScript 样式与核心脚本 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PyWith - 中国 Python 开发者社区与交互沙盒</title>
+    
+    <!-- 引入 PyScript 样式与核心脚本 (Wasm 驱动) -->
     <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css">
     <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+
     <style>
+        /* 1. 主题颜色变量定义 */
+        :root[data-theme="dark"] {
+            --bg-color: #0d1117;          /* 深邃极客黑背景 */
+            --card-bg: #161b22;           /* 卡片背景 */
+            --text-main: #c9d1d9;         /* 主文本色 */
+            --text-muted: #8b949e;        /* 辅助文本 */
+            --border-color: #30363d;      /* 边框线 */
+            --py-blue: #3776AB;           /* Python 蓝 */
+            --py-yellow: #FFD43B;         /* Python 黄 */
+            --code-bg: #090d12;           /* 代码块背景 */
+        }
+
+        :root[data-theme="light"] {
+            --bg-color: #f6f8fa;          /* 清爽工程白背景 */
+            --card-bg: #ffffff;           /* 卡片背景 */
+            --text-main: #24292e;         /* 主文本色 */
+            --text-muted: #586069;        /* 辅助文本 */
+            --border-color: #e1e4e8;      /* 边框线 */
+            --py-blue: #1f518b;           /* 略深的 Python 蓝（保证白底对比度） */
+            --py-yellow: #b58100;         /* 略深的金色（保证白底可读性） */
+            --code-bg: #f1f3f5;           /* 代码块背景 */
+        }
+
+        /* 2. 全局基础样式 */
         body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            max-width: 800px;
-            margin: 40px auto;
-            padding: 0 20px;
-            background-color: #0d1117;
-            color: #c9d1d9;
+            max-width: 850px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
-        h1 { color: #58a6ff; font-size: 24px; }
-        .code-block {
-            background: #161b22;
-            padding: 15px;
-            border-radius: 6px;
-            border: 1px solid #30363d;
-            font-family: monospace;
-            color: #79c0ff;
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
         }
-        p { line-height: 1.6; }
+
+        .brand-container {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        /* 极简 Icon 样式 */
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: var(--py-blue);
+            font-size: 26px;
+            margin: 0;
+            letter-spacing: -0.5px;
+        }
+
+        .theme-toggle {
+            background: var(--card-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 8px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .theme-toggle:hover {
+            border-color: var(--py-blue);
+        }
+
+        /* 3. 卡片与排版 */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+        }
+
+        p {
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        pre {
+            background: var(--code-bg);
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            overflow-x: auto;
+            font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .keyword { color: var(--py-blue); font-weight: bold; }
+        .comment { color: var(--text-muted); }
+
+        /* PyScript 终端美化适配 */
+        py-repl {
+            margin-top: 12px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
     </style>
 </head>
 <body>
 
-    <h1>with python:</h1>
-    <p>欢迎来到 <strong>pywith.com</strong> 交互式 Wasm 沙盒。你可以在下方的控制台直接输入 Python 代码（支持标准库及 NumPy 等科学计算），体验纯前端的实时执行：</p>
+    <header>
+        <div class="brand-container">
+            <!-- 蛇形走之旁极简 Icon (SVG 矢量内嵌) -->
+            <div class="logo-icon">
+                <svg viewBox="0 0 100 100" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+                    <!-- 蛇头 -->
+                    <path d="M 32 25 C 32 19, 42 19, 42 25 C 42 31, 32 31, 32 25 Z" fill="#FFD43B"/>
+                    <circle cx="38" cy="23" r="1.5" fill="#0d1117"/>
+                    <!-- 蛇身（走之旁） -->
+                    <path d="M 25 38 Q 45 38, 35 55 T 18 78 C 16 81, 22 86, 28 83 L 74 65" 
+                          fill="none" stroke="#3776AB" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+                    <!-- 蛇尾点缀 -->
+                    <path d="M 52 74 L 78 64" fill="none" stroke="#FFD43B" stroke-width="10" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <h1>with python:</h1>
+        </div>
+        <!-- 主题切换按钮 -->
+        <button class="theme-toggle" onclick="toggleTheme()">🌓 切换主题</button>
+    </header>
 
-    <!-- 静态展示你构思的极客全景图 -->
-    <div class="code-block">
-<pre>with python as starter:
-    basic = "语法与基础"
-    builtin_func = "内置函数剖析"
-    class_oop = "面向对象设计"
-... as low_level:
-    cpython = "底层源码与 GIL"
-    frame = "执行帧与字节码"</pre>
+    <!-- 社区架构蓝图展示卡片 -->
+    <div class="card">
+        <p>欢迎来到 <strong>pywith.com</strong> —— 中国 Python 开发者的共建社区。在这里，我们用代码定义生态：</p>
+        <pre><code><span class="keyword">with</span> python <span class="keyword">as</span> starter:
+    basic = <span class="comment">"语法与基础"</span>
+    builtin_func = <span class="comment">"内置函数剖析"</span>
+    class_oop = <span class="comment">"面向对象设计"</span>
+... <span class="keyword">as</span> low_level:
+    cpython = <span class="comment">"底层源码与 GIL"</span>
+    frame = <span class="keyword">执行帧与字节码</span></code></pre>
     </div>
 
-    <hr style="border: 0; border-top: 1px solid #30363d; margin: 30px 0;">
-
-    <h3>🟢 交互式 Python 控制台 (Wasm驱动)</h3>
-    <p>试着在下方输入 <code>print("Hello, PyWith!")</code> 或进行数学计算：</p>
-
-    <!-- PyScript 提供的开箱即用交互式 REPL 组件 -->
-    <py-script>
-        # 可以在这里预加载一些环境或欢迎语
-        print("Python Wasm 环境加载成功！基于 CPython 核心运行。\n")
-    </py-script>
-
-    <py-repl>
-# 试着运行这段代码：
+    <!-- WebAssembly 交互沙盒卡片 -->
+    <div class="card">
+        <h3>🟢 在线 Python 交互沙盒 (Wasm 驱动)</h3>
+        <p>所有代码均直接在你的浏览器本地沙盒（Pyodide / CPython）中实时运行，零后端消耗。试着点击下方运行或修改代码：</p>
+        
+        <!-- PyScript 交互式 REPL 终端 -->
+        <py-repl>
 import platform
 import math
 
-print(f"运行环境: {platform.python_implementation()} {platform.python_version()}")
+print(f"当前运行环境: {platform.python_implementation()} {platform.python_version()}")
 print(f"计算圆周率: {math.pi:.4f}")
-    </py-repl>
+print("Hello, PyWith.com!")
+        </py-repl>
+    </div>
 
+    <script>
+        // 主题切换逻辑与本地存储记忆
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+
+        // 初始化：优先读取本地存储，其次跟随系统偏好
+        const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    </script>
 </body>
 </html>
